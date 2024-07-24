@@ -1,0 +1,10 @@
+source_mode: 3
+video: 0
+video_path: "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/Video_00001.mp4"
+engine_file: "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/three.FP32.trtmodel"
+gpu_id: 0
+confidence_threshold: 0.75
+nms_threshold: 0.3
+nms_method: "FastGPU"
+max_objects: 1024
+preprocess_multi_stream: false

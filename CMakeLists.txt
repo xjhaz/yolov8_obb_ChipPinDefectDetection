@@ -20,7 +20,7 @@ set(PROTOBUF_DIR "/usr/include/google/protobuf")
 
 find_package(CUDA REQUIRED)
 find_package(OpenCV)
-
+find_package(yaml-cpp REQUIRED)
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/application
@@ -71,4 +71,4 @@ target_link_libraries(pro cuda cublas cudart cudnn)
 target_link_libraries(pro protobuf pthread plugin_list)
 target_link_libraries(pro ${OpenCV_LIBS})
 target_link_libraries(pro opencv_core opencv_imgproc opencv_videoio opencv_highgui opencv_imgcodecs)
-
+target_link_libraries(pro yaml-cpp)

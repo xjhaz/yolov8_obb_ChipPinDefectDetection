@@ -5,8 +5,27 @@
 #include "app_yolo_obb/yolo_obb.hpp"
 #include "tools/zmq_remote_show.hpp"
 #include <chrono>
+#include <fstream>
+#include <yaml-cpp/yaml.h>
 using namespace std;
 
+TRT::Mode getModeFromString(const std::string &modeStr)
+{
+    static std::map<std::string, TRT::Mode> modeMap = {
+        {"FP32", TRT::Mode::FP32},
+        {"FP16", TRT::Mode::FP16},
+        {"INT8", TRT::Mode::INT8}};
+
+    auto it = modeMap.find(modeStr);
+    if (it != modeMap.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        throw std::runtime_error("Unknown mode string: " + modeStr);
+    }
+}
 static const char *dotalabels[] = {
     "1", "broken"};
 
@@ -43,11 +62,16 @@ static vector<cv::Point> xywhr2xyxyxyxy(const YoloOBB::Box &box)
 
     return corners;
 }
+
 int yolo_obb_convert()
 {
     INFO("Start convert process......\n");
-    TRT::Mode mode = TRT::Mode::FP32;
-    const string model = "best";
+
+    std::ifstream file("../config/config_convert.yaml");
+    YAML::Node config = YAML::Load(file);
+    TRT::Mode mode = getModeFromString(config["mode"].as<std::string>());
+    const string model = config["model"].as<std::string>();
+
     int deviceid = 0;
     auto mode_name = TRT::mode_string(mode);
     TRT::set_device(deviceid);
@@ -96,49 +120,65 @@ int yolo_obb_convert()
 int yolo_obb_infer()
 {
     INFO("Start infer process......\n");
-    cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/workspace/Video_00001.mp4");
-    // std::string gstPipeline = "v4l2src device=/dev/video0 ! video/x-raw, format=BGRx ! videoconvert ! videoscale ! appsink";
+    std::ifstream file("../config/config_infer.yaml");
+    YAML::Node config = YAML::Load(file);
+    int source_mode = config["source_mode"].as<int>();
+    cv::VideoCapture cap;
+    if (source_mode == 0)
+    {
+        cap.open(config["video"].as<int>());
+    }
+    else if(source_mode == 1)
+    {
+        cap.open(config["video_path"].as<std::string>());
+    }
+    else 
+    {
+        INFOE("Unknown source mode detected. Please verify the 'mode' setting in your 'config_infer.yaml' file.");
+        return -1;
+    }
+    std::string engine_file = config["engine_file"].as<std::string>();
+    int gpu_id = config["gpu_id"].as<int>();
+    float confidence_threshold = config["confidence_threshold"].as<float>();
+    float nms_threshold = config["nms_threshold"].as<float>();
+    YoloOBB::NMSMethod nms_method = config["nms_method"].as<std::string>() == "FastGPU" ? YoloOBB::NMSMethod::FastGPU : YoloOBB::NMSMethod::CPU; // 假设只有这两种 NMS 方法
+    int max_objects = config["max_objects"].as<int>();
+    bool preprocess_multi_stream = config["preprocess_multi_stream"].as<bool>();
 
-    // cv::VideoCapture cap(gstPipeline, cv::CAP_GSTREAMER);
-
-    // cv::VideoCapture cap(0);
     if (!cap.isOpened())
     {
         std::cerr << "Error: Could not open video file." << std::endl;
         return -1;
     }
-    // cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
-    // cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
     auto engine = YoloOBB::create_infer(
-        "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/three.FP32.trtmodel", // engine file
-        0,                                                                // gpu id
-        0.75f,                                                            // confidence threshold
-        0.3f,                                                             // nms threshold
-        YoloOBB::NMSMethod::FastGPU,                                      // NMS method, fast GPU / CPU
-        1024,                                                             // max objects
-        false                                                             // preprocess use multi stream
-    );
+        engine_file,
+        gpu_id,
+        confidence_threshold,
+        nms_threshold,
+        nms_method,
+        max_objects,
+        preprocess_multi_stream);
     if (engine == nullptr)
     {
         INFOE("Engine is nullptr");
         exit(-1);
     }
-    cv::Mat image;
+    cv::Mat frame;
     while (true)
     {
         // auto start = std::chrono::high_resolution_clock::now();
-        cap >> image;
-        if (image.empty())
+        cap >> frame;
+        if (frame.empty())
         {
             break; // End of video
         }
-        if (image.empty())
+        if (frame.empty())
         {
-            INFOE("Image is empty");
+            INFOE("frame is empty");
             break;
         }
         // auto start1 = std::chrono::high_resolution_clock::now();
-        auto boxes = engine->commit(image).get();
+        auto boxes = engine->commit(frame).get();
         // auto end1 = std::chrono::high_resolution_clock::now();
 
         // Calculate the duration
@@ -156,12 +196,12 @@ int yolo_obb_infer()
             if (obj.class_label == 1)
             {
                 auto corners = xywhr2xyxyxyxy(obj);
-                cv::polylines(image, vector<vector<cv::Point>>{corners}, true, cv::Scalar(b, g, r), 2, 16);
+                cv::polylines(frame, vector<vector<cv::Point>>{corners}, true, cv::Scalar(b, g, r), 2, 16);
                 auto name = dotalabels[obj.class_label];
                 auto caption = iLogger::format("%s %.2f", name, obj.confidence);
                 int width = cv::getTextSize(caption, 0, 1, 2, nullptr).width + 10;
-                cv::rectangle(image, cv::Point(corners[0].x, corners[0].y), cv::Point(corners[0].x + width, corners[0].y + 30), cv::Scalar(b, g, r), -1);
-                cv::putText(image, caption, cv::Point(corners[0].x, corners[0].y + 30), 0, 1, cv::Scalar::all(0), 2, 16);
+                cv::rectangle(frame, cv::Point(corners[0].x, corners[0].y), cv::Point(corners[0].x + width, corners[0].y + 30), cv::Scalar(b, g, r), -1);
+                cv::putText(frame, caption, cv::Point(corners[0].x, corners[0].y + 30), 0, 1, cv::Scalar::all(0), 2, 16);
             }
         }
         // auto end = std::chrono::high_resolution_clock::now();
@@ -172,8 +212,8 @@ int yolo_obb_infer()
         // Print the duration in seconds
         // std::cout << "Time taken by function: " << duration.count() << " seconds" << std::endl;
 
-        cv::resize(image, image, cv::Size(1920 / 2, 1080 / 2));
-        cv::imshow("Video", image);
+        cv::resize(frame, frame, cv::Size(frame.cols / 2, frame.rows / 2));
+        cv::imshow("Video", frame);
         if (cv::waitKey(1) >= 0)
         {
             break; // Stop if any key is pressed
