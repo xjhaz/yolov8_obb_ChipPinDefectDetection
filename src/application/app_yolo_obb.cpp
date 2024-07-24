@@ -43,8 +43,11 @@ static vector<cv::Point> xywhr2xyxyxyxy(const YoloOBB::Box &box)
 
     return corners;
 }
-static void test(TRT::Mode mode, const string &model)
+int yolo_obb_convert()
 {
+    INFO("Start convert process......\n");
+    TRT::Mode mode = TRT::Mode::FP32;
+    const string model = "best";
     int deviceid = 0;
     auto mode_name = TRT::mode_string(mode);
     TRT::set_device(deviceid);
@@ -62,10 +65,10 @@ static void test(TRT::Mode mode, const string &model)
     };
 
     const char *name = model.c_str();
-    INFO("===================== test YoloV8-OBB %s %s ==================================", mode_name, name);
+    INFO("===================== convert YoloV8-OBB %s %s ==================================", mode_name, name);
 
     if (not requires(name))
-        return;
+        return -1;
 
     string onnx_file = iLogger::format("%s.onnx", name);
     string model_file = iLogger::format("%s.%s.trtmodel", name, mode_name);
@@ -81,14 +84,19 @@ static void test(TRT::Mode mode, const string &model)
             {},
             int8process,
             "inference_obb",
-            ""
-            );
+            "");
     }
+    else
+    {
+        INFO("Model already exists. If you want to re-convert the model, please delete or rename the old model.\n");
+    }
+    return 0;
 }
-int app_yolo_obb()
+
+int yolo_obb_infer()
 {
-    // test(TRT::Mode::FP32, "best");
-cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/Video_00001.mp4");
+    INFO("Start infer process......\n");
+    cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/workspace/Video_00001.mp4");
     // std::string gstPipeline = "v4l2src device=/dev/video0 ! video/x-raw, format=BGRx ! videoconvert ! videoscale ! appsink";
 
     // cv::VideoCapture cap(gstPipeline, cv::CAP_GSTREAMER);
@@ -99,12 +107,12 @@ cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/Video_00001.mp4");
         std::cerr << "Error: Could not open video file." << std::endl;
         return -1;
     }
-        // cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
+    // cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
     // cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
     auto engine = YoloOBB::create_infer(
         "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/three.FP32.trtmodel", // engine file
         0,                                                                // gpu id
-        0.75f,                                                             // confidence threshold
+        0.75f,                                                            // confidence threshold
         0.3f,                                                             // nms threshold
         YoloOBB::NMSMethod::FastGPU,                                      // NMS method, fast GPU / CPU
         1024,                                                             // max objects
@@ -152,8 +160,8 @@ cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/Video_00001.mp4");
                 auto name = dotalabels[obj.class_label];
                 auto caption = iLogger::format("%s %.2f", name, obj.confidence);
                 int width = cv::getTextSize(caption, 0, 1, 2, nullptr).width + 10;
-                cv::rectangle(image, cv::Point(corners[0].x , corners[0].y ), cv::Point(corners[0].x + width, corners[0].y + 30), cv::Scalar(b, g, r), -1);
-                cv::putText(image, caption, cv::Point(corners[0].x , corners[0].y +30), 0, 1, cv::Scalar::all(0), 2, 16);
+                cv::rectangle(image, cv::Point(corners[0].x, corners[0].y), cv::Point(corners[0].x + width, corners[0].y + 30), cv::Scalar(b, g, r), -1);
+                cv::putText(image, caption, cv::Point(corners[0].x, corners[0].y + 30), 0, 1, cv::Scalar::all(0), 2, 16);
             }
         }
         // auto end = std::chrono::high_resolution_clock::now();
@@ -164,7 +172,7 @@ cv::VideoCapture cap("/home/nvidia/tensorRT_Pro-YOLOv8/Video_00001.mp4");
         // Print the duration in seconds
         // std::cout << "Time taken by function: " << duration.count() << " seconds" << std::endl;
 
-        cv::resize(image, image, cv::Size(1920/2, 1080/2));
+        cv::resize(image, image, cv::Size(1920 / 2, 1080 / 2));
         cv::imshow("Video", image);
         if (cv::waitKey(1) >= 0)
         {
