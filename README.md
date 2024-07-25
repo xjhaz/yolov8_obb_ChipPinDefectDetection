@@ -294,6 +294,11 @@ python export.py
 
 推理过程中需要将onnx模型转换为trtmodel，以便进行加速推理。
 
+```sh
+git clone https://github.com/xjhaz/yolov8_obb_ChipPinDefectDetection.git
+cd yolov8_obb_ChipPinDefectDetection
+```
+
 ## 1.环境依赖
 
 测试环境
