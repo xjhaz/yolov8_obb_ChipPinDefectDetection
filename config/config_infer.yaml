@@ -1,10 +1,10 @@
-source_mode: 3
-video: 0
-video_path: "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/Video_00001.mp4"
-engine_file: "/home/nvidia/tensorRT_Pro-YOLOv8/workspace/three.FP32.trtmodel"
-gpu_id: 0
-confidence_threshold: 0.75
-nms_threshold: 0.3
-nms_method: "FastGPU"
-max_objects: 1024
-preprocess_multi_stream: false
+source_mode: 1                    # Source mode, '1' for using the video file specified in 'video_path'. '0' for using video input from devices like 'video0', 'video1', etc.
+video: 0                          # Video input device setting, '0' refer to device '/dev/video0'.
+video_path: "./Video_00001.mp4"   # Path to the video file used for processing.
+engine_file: "./three.FP32.trtmodel"  # Path to the TensorRT engine file.
+gpu_id: 0                         # GPU ID, '0' refers to the first GPU to be used for processing.
+confidence_threshold: 0.75        # Confidence threshold, filters detections having a confidence score less than 0.75.
+nms_threshold: 0.3                # Non-maximum suppression (NMS) threshold, used to resolve overlapping bounding boxes.
+nms_method: "FastGPU"             # NMS method, options include 'FastGPU' for GPU-accelerated computation or 'CPU' for CPU-based computation.
+max_objects: 1024                 # Maximum number of objects to detect, limiting the detection to 1024 objects.
+preprocess_multi_stream: false    # Preprocess multi stream flag, 'false' indicates that preprocessing for multiple streams is not enabled.

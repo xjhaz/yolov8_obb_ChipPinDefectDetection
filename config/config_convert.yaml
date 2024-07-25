@@ -1,2 +1,2 @@
-mode: "FP16"
-model: "three"
+mode: "FP16"     # FP32 or FP16 or INT8
+model: "best"    # Your model name
