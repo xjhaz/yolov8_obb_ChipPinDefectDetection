@@ -166,33 +166,22 @@ int yolo_obb_infer()
     cv::Mat frame;
     while (true)
     {
-        // auto start = std::chrono::high_resolution_clock::now();
         cap >> frame;
         if (frame.empty())
         {
-            break; // End of video
+            break; 
         }
         if (frame.empty())
         {
             INFOE("frame is empty");
             break;
         }
-        // auto start1 = std::chrono::high_resolution_clock::now();
         auto boxes = engine->commit(frame).get();
-        // auto end1 = std::chrono::high_resolution_clock::now();
-
-        // Calculate the duration
-        // std::chrono::duration<double> duration1 = end1 - start1;
-
-        // Print the duration in seconds
-        // std::cout << "Time taken by function: " << duration1.count() << " seconds" << std::endl;
 
         for (auto &obj : boxes)
         {
             uint8_t b, g, r;
             tie(b, g, r) = iLogger::random_color(obj.class_label);
-
-            // std::cout << dotalabels[obj.class_label] << std::endl;
             if (obj.class_label == 1)
             {
                 auto corners = xywhr2xyxyxyxy(obj);
@@ -204,13 +193,6 @@ int yolo_obb_infer()
                 cv::putText(frame, caption, cv::Point(corners[0].x, corners[0].y + 30), 0, 1, cv::Scalar::all(0), 2, 16);
             }
         }
-        // auto end = std::chrono::high_resolution_clock::now();
-
-        // Calculate the duration
-        // std::chrono::duration<double> duration = end - start;
-
-        // Print the duration in seconds
-        // std::cout << "Time taken by function: " << duration.count() << " seconds" << std::endl;
 
         cv::resize(frame, frame, cv::Size(frame.cols / 2, frame.rows / 2));
         cv::imshow("Video", frame);
