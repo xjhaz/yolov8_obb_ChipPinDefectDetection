@@ -1,31 +1,30 @@
 # yolov8_obb芯片引脚缺陷检测
 
-**[yolov8_obb芯片引脚缺陷检测](#yolov8_obb芯片引脚缺陷检测)**
-
-- [零、项目说明](#零项目说明)
-- [一、数据集制作](#一数据集制作)
-- [二、数据集转换](#二数据集转换)
-- [三、模型训练](#三模型训练)
-  - [1. 新建dota8-obb.yaml文件](#1-新建dota8-obbyaml文件)
-  - [2. 新建yolov8-obb.yaml文件](#2-新建yolov8-obbyaml文件)
-  - [3. 修改代码，保证动态batch](#3-修改代码保证动态batch)
-  - [4. 新建train.py](#4-新建trainpy)
-  - [5. 开始训练](#5-开始训练)
-- [四、模型导出](#四模型导出)
-  - [1. 进行辅助标注的模型导出](#1-进行辅助标注的模型导出)
-  - [2. 进行推理的模型导出](#2-进行推理的模型导出)
-- [五、trt模型转换](#五trt模型转换)
-  - [1.环境依赖](#1环境依赖)
-  - [2.配置CMakeLists.txt](#2配置cmakeliststxt)
-  - [3.配置并转换模型](#3配置并转换模型)
-- [六、推理](#六推理)
+- [yolov8_obb芯片引脚缺陷检测](#yolov8_obb芯片引脚缺陷检测)
+- [1. 项目说明](#1.-项目说明)
+- [2. 数据集制作](#2.-数据集制作)
+- [3. 数据集转换](#3.-数据集转换)
+- [安装依赖](#安装依赖)
+- [4. 模型训练](#4.-模型训练)
+  - [4.1 新建**dota8-obb.yaml**文件](#4.1-新建**dota8-obb.yaml**文件)
+  - [4.2 新建**yolov8-obb.yaml**文件](#4.2-新建**yolov8-obb.yaml**文件)
+  - [4.3 修改代码，保证动态batch](#4.3-修改代码，保证动态batch)
+  - [4.4 新建**train.py**](#4.4-新建**train.py**)
+  - [4.5 开始训练](#4.5-开始训练)
+- [5. 模型导出](#5.-模型导出)
+  - [5.1 进行辅助标注的模型导出](#5.1-进行辅助标注的模型导出)
+  - [5.2 进行推理的模型导出](#5.2-进行推理的模型导出)
+- [6. trt模型转换](#6.-trt模型转换)
+  - [6.1 环境依赖](#6.1-环境依赖)
+  - [6.2 配置CMakeLists.txt](#6.2-配置cmakelists.txt)
+- [7. 推理](#7.-推理)
 - [附录](#附录)
-  - [1. X-AnyLabeling快捷键](#1-x-anylabeling快捷键)
-  - [2. 视频处理脚本](#2-视频处理脚本)
-  - [3. 使用自定义模型进行辅助标注](#3-使用自定义模型进行辅助标注)
+  - [1. X-AnyLabeling快捷键](#1.-x-anylabeling快捷键)
+  - [2. 视频处理脚本](#2.-视频处理脚本)
+  - [3. 使用自定义模型进行辅助标注](#3.-使用自定义模型进行辅助标注)
 - [参考](#参考)
 
-# 零、项目说明
+# 1. 项目说明
 
 本项目实现了使用 YOLOv8-OBB 模型进行芯片引脚缺陷检测。
 
@@ -36,7 +35,7 @@
 - trt模型导出和推理必须在同一设备进行，trtmodel在不同平台无法通用。
 - 用于辅助标注的模型[google drive](https://drive.google.com/file/d/1JqsdT-PV2CxmpiZCIqBoCm5Tzyyzg2PI/view?usp=sharing)/[baidu drive](https://pan.baidu.com/s/1qIe2CjclLvXxjpcp45Q03g?pwd=uee1)和用于推理的模型[google drive](https://drive.google.com/file/d/1JpzAzXobLKUAJt3glAjYg-YI9lNkbXE6/view?usp=sharing)/[baidu drive](https://pan.baidu.com/s/1RKT2s3M4H0WZkGHMaSNyrg?pwd=qkc1)，模型仅用于测试流程，效果不佳。
 
-# 一、数据集制作
+# 2. 数据集制作
 
 数据集标注使用[X-AnyLabeling](https://github.com/CVHub520/X-AnyLabeling)进行标注，[下载链接(github release)](https://github.com/CVHub520/X-AnyLabeling/releases)。如果本地具有GPU，可以选择GPU版本，可以加速辅助标注的过程。这个软件的优点是，可以将已经训练完成的模型导入到软件中进行辅助的标注。
 
@@ -55,7 +54,7 @@
 
 ![image-20240723171056775](img/image-20240723171056775.png)
 
-# 二、数据集转换
+# 3. 数据集转换
 
 首先克隆yolov8-obb的git库。
 
@@ -112,9 +111,9 @@ class_mapping = {
 
 修改完成后运行此脚本，在**dataset_obb/labels**下面会出现**val**和**train**的文件夹，文件夹中会有转换完成后的标签。
 
-# 三、模型训练
+# 4. 模型训练
 
-## 1. 新建**dota8-obb.yaml**文件
+## 4.1 新建**dota8-obb.yaml**文件
 
    将下面的内容粘贴进去，修改文件的路径和标签数目、名称。
 
@@ -128,7 +127,7 @@ class_mapping = {
      1: baseball-diamond
    ```
 
-## 2. 新建**yolov8-obb.yaml**文件
+## 4.2 新建**yolov8-obb.yaml**文件
 
    将下面的内容粘贴进去，修改nc的数目。
 
@@ -181,7 +180,7 @@ class_mapping = {
      - [[15, 18, 21], 1, OBB, [nc, 1]]  # OBB(P3, P4, P5)
    ```
 
-## 3. 修改代码，保证动态batch
+## 4.3 修改代码，保证动态batch
 
 修改下面代码的对应位置的内容。
 
@@ -195,7 +194,7 @@ class_mapping = {
    return torch.cat([x, angle], 1).permute(0, 2, 1) if self.export else (torch.cat([x[0], angle], 1), (x[1], angle))
    ```
 
-## 4. 新建**train.py**
+## 4.4 新建**train.py**
 
 将下面的内容粘贴进去，修改**yolov8-obb.yaml**文件名为**yolov8s-obb.yaml**（如果训练模型l则修改为yolov8l-obb.yaml，以此类推）、修改**epochs**(轮次)、**imgsz**(图像大小)、**batch**(批大小)等参数，更多参数请参考[官方网站](https://docs.ultralytics.com/usage/cfg/#predict-settings)中的**Train Settings**部分。
 
@@ -209,17 +208,17 @@ class_mapping = {
    results = model.train(data="dota8-obb.yaml", epochs=100, imgsz=640, batch=4)
    ```
 
-## 5. 开始训练
+## 4.5 开始训练
 
    ```python
    python train.py
    ```
 
-# 四、模型导出
+# 5. 模型导出
 
 模型导出时需要注意，用于辅助标注的模型和用于加速推理的模型无法通用，下面会进行分别的说明。
 
-## 1. 进行辅助标注的模型导出
+## 5.1 进行辅助标注的模型导出
 
 在这里建议重新克隆一份代码
 
@@ -244,7 +243,7 @@ python export.py
 
 得到对应的onnx后，即可用于辅助标准，模型导入到标注软件的方法见附录。
 
-## 2. 进行推理的模型导出
+## 5.2 进行推理的模型导出
 
 后面的内容在原用于训练的项目中进行。
 
@@ -290,7 +289,7 @@ success = model.export(format="onnx", dynamic=True, simplify=True)
 python export.py
 ```
 
-# 五、trt模型转换
+# 6. trt模型转换
 
 推理过程中需要将onnx模型转换为trtmodel，以便进行加速推理。
 
@@ -299,7 +298,7 @@ git clone https://github.com/xjhaz/yolov8_obb_ChipPinDefectDetection.git
 cd yolov8_obb_ChipPinDefectDetection
 ```
 
-## 1.环境依赖
+## 6.1 环境依赖
 
 测试环境
 
@@ -309,7 +308,7 @@ cd yolov8_obb_ChipPinDefectDetection
 - TensorRT 8.5.2
 - protobuf 3.11.4
 
-## 2.配置CMakeLists.txt
+## 6.2 配置CMakeLists.txt
 
 将compute_87、sm_87中的数字修改为自己的板卡的对应计算能力。如果使用的是其他显卡，请从[官方网站](https://developer.nvidia.com/zh-cn/cuda-gpus#compute)进行查询并进行修改。
 
@@ -341,7 +340,7 @@ cmake ..
 make -j
 ```
 
-## 3.配置并转换模型
+## 6.3 配置并转换模型
 
 将之前生成的onnx粘贴到workspace路径下，修改config/config_convert.yaml的配置，将mode修改为转换模型的精度，model修改为模型的名字（不包含.onnx的后缀）。
 
@@ -357,7 +356,7 @@ cd workspace
 ./pro convert
 ```
 
-# 六、推理
+# 7. 推理
 
 修改config/config_infer.yaml的配置。
 
@@ -381,6 +380,10 @@ cd workspace
 or
 ./pro infer
 ```
+
+成功运行之后会出现如图所示的画面，有缺陷的引脚会被标记出来。
+
+<img src=".\img\Snipaste_2024-07-25_16-10-31.jpg" alt="Snipaste_2024-07-25_16-10-31" style="zoom:80%;" />
 
 # 附录
 
