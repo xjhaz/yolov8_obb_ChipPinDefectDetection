@@ -62,8 +62,23 @@
 git clone https://github.com/ultralytics/ultralytics.git
 cd ultralytics
 git checkout tags/v8.1.0 -b v8.1.0
-#安装依赖
-pip install ultralytics
+```
+
+升级cmake版本：
+
+```sh
+wget https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-aarch64.tar.gz
+tar -zxvf cmake-3.30.0-linux-aarch64.tar.gz
+sudo mv cmake-3.30.0-linux-aarch64 /usr/local/cmake-3.30.0
+sudo rm /usr/bin/cmake /usr/bin/ccmake /usr/bin/cmake-gui
+sudo ln -sf /usr/local/cmake-3.30.0/bin/* /usr/bin/
+cmake --version
+```
+
+输出cmake version 3.30.0即为升级成功，升级完成后安装依赖。
+
+```sh
+pip install ultralytics onnx onnxsim onnxruntime hub_sdk -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 在**ultralytics**中新建**dataset_obb**文件夹，建立出如图所示的目录结构，并将图片和标签放入对应的文件夹。其中train和val自行划分即可，此处不进行详细讲解。
